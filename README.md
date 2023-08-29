@@ -21,11 +21,13 @@ O presente projeto se refere a um **analisador léxico** capaz de definir os tok
 ## Dependências
 O projeto não possui dependências para ser executado, porém foi utilizado para criar um ambiente de desenvolvimento um pacote do python chamado ***pipenv***. Não é necessário para executá-lo, porém caso deseje, veja o processo para ativar o ambiente de desenvolvimento [clicando aqui](https://willemallan.com.br/aprendendo-a-utilizar-o-pipenv/).
 
+As dependências também podem ser vistas no arquivo `Pipfile`, que está vazio por o projeto não ter dependências.
+
 A versão do python utilizada está listada no arquivo ```.python-version```
 
 ## Execução
 
-Para executar o **analisador léxico** basta executar o comando `python run.py` na raíz do projeto ( dentro da pasta `lexical-analyzer`).
+Para executar o **analisador léxico** basta executar o comando `python run.py` na raíz do projeto ( dentro da pasta `lexical-analyzer`). É necessário fornecer os arquivos `.txt` contendo os textos que serão analisados na pasta `files/`.
 
 Todo o processo é feito no arquivo `run.py`, integrando todos os módulos.
 

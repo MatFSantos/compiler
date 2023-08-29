@@ -106,10 +106,11 @@ class Analyzer():
                 else:
                     erros.append(f"{line} <NMF, {lexeme}>")
                 i -= 1
-            # delimitadores, aritméticos
+            # símbolos
             elif re.match(self.__regex_symbol, content[i]):
                 verified = False
                 lexeme = content[i]
+                # delimitadores
                 if content[i] in self.__delimiters or content[i] == '-':
                     if content[i] == '-':
                         if i + 1 < length:
@@ -121,6 +122,7 @@ class Analyzer():
                     else:
                         tokens.append(f"{line} <DEL, {lexeme}>")
                         verified = True
+                # operadores aritméticos
                 if content[i] in self.__aritmetic and not verified:
                     verified = True
                     if content[i] == '/':
@@ -163,6 +165,7 @@ class Analyzer():
                         tokens.append(f"{line} <ART, {lexeme}>")
                     else:
                         tokens.append(f"{line} <ART, {lexeme}>")
+                # operadores relacionais
                 if content[i] in self.__relational and not verified:
                     if content[i] == '!':
                         if i + 1 < length:
@@ -178,6 +181,7 @@ class Analyzer():
                                 lexeme += content[i]
                         tokens.append(f"{line} <REL, {lexeme}>")
                         verified = True
+                # operadores lógicos
                 if content[i] in self.__logical and not verified:
                     verified = True
                     if content[i] in ['&', '|']:
@@ -201,6 +205,7 @@ class Analyzer():
                             erros.append(f"{line} <TMF, {lexeme}>")
                     else:
                         tokens.append(f"{line} <LOG, {lexeme}>")
+                # símbolos
                 if not verified and content[i] != ' ':
                     stop = False
                     i += 1
@@ -213,6 +218,7 @@ class Analyzer():
                         i += 1
                     erros.append(f"{line} <TMF, {lexeme}>")
                     i -= 1
+            # cadeia de caracteres
             elif content[i] == '"':
                 lexeme = content[i]
                 i += 1
@@ -232,8 +238,10 @@ class Analyzer():
                 else:
                     erros.append(f"{line} <CMF, {lexeme}>")
                     i -= 1 if content[i] == '\n' else 0
+            # contado de linhas
             elif content[i] == '\n':
                 line += 1
+            # fora do range de símbolos
             else:
                 lexeme = content[i]
                 stop = False

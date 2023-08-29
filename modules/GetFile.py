@@ -5,7 +5,6 @@ class GetFile():
         self.__root_directory = root_directory
     
     def run(self) -> list[str] | bool:
-        
         try:
             items_in_dir = os.listdir(path=self.__root_directory)
             files = [
@@ -16,6 +15,6 @@ class GetFile():
             print(f"The directory {self.__root_directory} not found.")
             return False
         except Exception as e:
-            print(f"An error was occurred when get the file names:    {e}")
+            print(f"An error was occurred while get the file names:    {e}")
             return False
         return files

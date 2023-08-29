@@ -9,6 +9,6 @@ class GetContent():
             with open(self.__root_directory + filename, 'r') as f:
                 content = f.read()
         except Exception as e:
-            print(f"An error was occurred when get the file content: {e}")
+            print(f"An error was occurred while get the file content: {e}")
         finally:
             return content

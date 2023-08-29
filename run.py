@@ -6,8 +6,9 @@ from modules.Analyzer import Analyzer
 ROOT_DIR = "./files/"
 
 files = GetFile(ROOT_DIR).run()
-
-if files and len(files) > 0:
+if not files:
+	print(f"An error was occurred while getting files in '{ROOT_DIR}'")
+elif len(files) > 0:
 	for file in files:
 		content = GetContent(ROOT_DIR).run(file)
 		if content == "":
@@ -16,8 +17,7 @@ if files and len(files) > 0:
 			try:
 				tokens, errors = Analyzer().run(content)
 			except Exception as e:
-				print(f"An error was occurred when tokenize the content: {e}")
-			SaveFile(ROOT_DIR).run(filename=file, tokens=tokens, errors=errors)
-			
+				print(f"An error was occurred while tokenize the content: {e}")
+			SaveFile(ROOT_DIR).run(filename=file, tokens=tokens, errors=errors)			
 else:
 	print(f"Nenhum arquivo encontrado na pasta raíz '{ROOT_DIR}'")
