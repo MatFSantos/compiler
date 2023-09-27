@@ -9,7 +9,8 @@ class Analyzer():
         self.__reserved_words = [
             "variables", "const", "class", "methods", "objects", "main",
             "return", "if", "else", "then", "for", "read", "print", "void",
-            "int", "real", "boolean", "string", "true", "false"
+            "int", "real", "boolean", "string", "true", "false", "extends",
+            "this", "constructor"
         ]
         self.__separators = ['\n', ';', ',', '.', '(', ')', '[', ']', '{', '}', '-', '+', '*', '/', '!', '=', '<', '>', '&', '|', ' ', '"']
         self.__delimiters = [';', ',', '.', '(', ')', '[', ']', '{', '}']
