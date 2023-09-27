@@ -5,6 +5,7 @@ class Analyzer():
         self.__regex_letter = r'[a-zA-Z]'
         self.__regex_number = r'[0-9]'
         self.__regex_symbol = r'(?![A-Za-z0-9"])[ -~]'
+        self.__regex_not_a_symbol = r'[^\x00-\x7E]'
         self.__reserved_words = [
             "variables", "const", "class", "methods", "objects", "main",
             "return", "if", "else", "then", "for", "read", "print", "void",
@@ -24,6 +25,7 @@ class Analyzer():
         length = len(content)   # quantidade de caracteres dos arquivos
         content = content.replace('\t', ' ') # adiciona espaço no lugar de tabulações
 
+
         while i < length:
             # identificador / palavra reservada
             if re.match(self.__regex_letter, content[i]):
@@ -40,7 +42,7 @@ class Analyzer():
                                 valid_id = False
                         else:
                             valid_id = False
-                    if re.match(self.__regex_symbol, content[i]) and not stop and content[i] != '_':
+                    if (re.match(self.__regex_symbol, content[i]) and not stop and content[i] != '_') or re.match(self.__regex_not_a_symbol, content[i]):
                         valid_id = False
                     lexeme += content[i]
                     i += 1
@@ -72,13 +74,12 @@ class Analyzer():
                         valid_number = False
                     lexeme += content[i]
                     i += 1
-                # print(content[i - 1])
-                # print(f"line: {line}")
+                
                 if i < length and content[i] == '.':
                     lexeme += content[i]
                     i += 1
                     if i < length:
-                        if re.match(self.__regex_number, content[i]):
+                        if re.match(self.__regex_number, content[i]) and valid_number:
                             valid_number = True
                         else:
                             valid_number = False
