@@ -1,8 +1,8 @@
-from modules.Analyzer import Analyzer
+from src.modules.Lexicon import Lexicon
 
 class Tester():
     def __init__(self) -> None:
-        self.__analyzer = Analyzer()
+        self.__analyzer = Lexicon()
     def run(self, data_in, data_out_t, data_out_e) -> bool:
 
         tokens, errors = self.__analyzer.run(data_in)

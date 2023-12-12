@@ -1,6 +1,6 @@
 import re
 
-class Analyzer():
+class Lexicon():
     def __init__(self):
         self.__regex_letter = r'[a-zA-Z]'
         self.__regex_number = r'[0-9]'
