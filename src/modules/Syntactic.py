@@ -6,7 +6,11 @@ class Syntactic():
         self.__pointer = 0
         self.__tokens = []
         self.__tokens_len = 0
-        self.__errors = []
+        self.__syntactical_errors = []
+        self.__scopes = []
+        self.__scope_table = {} # { [identificador]: { type: ...,  category: ...,  parameter: ..., instantiated: ..., extends: ..., scope: { ... } } }
+        self.__semantic_errors = []
+        self.__var_temp = {}
     
     """
         Função que inicia o analizador sintático
@@ -14,7 +18,11 @@ class Syntactic():
     def run(self) -> list[str]:
         self.__parser_tokens()
         self.__program()
-        return self.__errors        
+        print("tabela de escopo:\n")
+        print(self.__scope_table)
+        print("erros:\n")
+        print(self.__semantic_errors)
+        return self.__syntactical_errors
 
     def __program(self) -> None:
         self.__consts_block()
@@ -28,9 +36,9 @@ class Syntactic():
             if token['value'] == '{':
                 self.__variables()
             else:
-                self.__error(token, '{')
+                self.__syntactical_error(token, '{')
         else:
-            self.__error(token, 'variables')
+            self.__syntactical_error(token, 'variables')
     
     def __variables(self) -> None:
         token = self.__next(expected='}')
@@ -48,15 +56,18 @@ class Syntactic():
         token = self.__next(expected="['int', 'real', 'boolean', 'string']")
         if token['key'] == 'PRE':
             if token['value'] in ['int', 'real', 'boolean', 'string']:
+                self.__var_temp['type'] = token['value']
                 return
-        self.__error(found=token, expected="['int', 'real', 'boolean', 'string']")
+        self.__syntactical_error(found=token, expected="['int', 'real', 'boolean', 'string']")
 
     def __dec_var(self) -> None:    
         token = self.__next(expected="IDE")
         if token['key'] == 'IDE':
+            self.__var_temp['ide'] = token['value']
+            self.__add_ide(token['value'], self.__var_temp['type'], "variable", False, False, token['line'])
             self.__dimensions()
         else:
-            self.__error(found=token, expected="IDE")
+            self.__syntactical_error(found=token, expected="IDE")
 
     def __dimensions(self) -> None:
         token = self.__next(expected='[')
@@ -66,14 +77,14 @@ class Syntactic():
             if token['value'] == ']':
                 self.__dimensions()
             else:
-                self.__error(found=token, expected=']')
+                self.__syntactical_error(found=token, expected=']')
         else:
             self.__pointer -= 1
 
     def __size_dimension(self) -> None:
         token = self.__next(expected='[NRO, IDE]')
         if token['key'] not in ['NRO', 'IDE']:
-            self.__error(found=token, expected='[NRO, IDE]')
+            self.__syntactical_error(found=token, expected='[NRO, IDE]')
 
     def __multiple_variables_line(self) -> None:
         token = self.__next(expected="[',', ';']")
@@ -81,7 +92,7 @@ class Syntactic():
             self.__dec_var()
             self.__multiple_variables_line()
         elif not token['value'] == ';':
-            self.__error(found=token, expected="[',', ';']")
+            self.__syntactical_error(found=token, expected="[',', ';']")
         
 
     def __class_block(self) -> None:
@@ -89,7 +100,7 @@ class Syntactic():
         if token['value'] == 'class':
             self.__ide_class()
         else:
-            self.__error(token, 'class')
+            self.__syntactical_error(token, 'class')
     
     def __ide_class(self) -> None:
         token = self.__next(expected='IDE')
@@ -106,7 +117,7 @@ class Syntactic():
             if token['key'] == 'IDE':
                 self.__start_class_block()
             else:
-                self.__error(token, 'extends')
+                self.__syntactical_error(token, 'extends')
         else:
             self.__pointer -= 1
             self.__start_class_block()
@@ -116,7 +127,7 @@ class Syntactic():
         if token['value'] == '{':
             self.__init_class()
         else:
-            self.__error(token, '{')
+            self.__syntactical_error(token, '{')
     
     def __init_class(self) -> None:
         self.__body_blocks()
@@ -131,11 +142,11 @@ class Syntactic():
                 self.__methods()
                 token = self.__next(expected='}')
                 if not token['value'] == '}':
-                    self.__error(found=token, expected='}')
+                    self.__syntactical_error(found=token, expected='}')
             else:
-                self.__error(found=token, expected='{')
+                self.__syntactical_error(found=token, expected='{')
         else:
-            self.__error(found=token, expected='methods')
+            self.__syntactical_error(found=token, expected='methods')
 
     def __methods(self) -> None:
         token = self.__next(expected="['}', 'void', 'int', 'real', 'boolean', 'string', IDE]")
@@ -152,9 +163,9 @@ class Syntactic():
             if token['value'] == '(':
                 self.__dec_parameters()
             else:
-                self.__error(found=token, expected='(')
+                self.__syntactical_error(found=token, expected='(')
         else:
-            self.__error(found=token, expected='(')
+            self.__syntactical_error(found=token, expected='(')
     
     def __types(self) -> None:
         token = self.__next(expected="['void', 'int', 'real', 'boolean', 'string', IDE]")
@@ -185,7 +196,7 @@ class Syntactic():
             if token['key'] == 'IDE':
                 self.__mult_dec_parameters()
             else:
-                self.__error(found=token, expected='IDE')
+                self.__syntactical_error(found=token, expected='IDE')
         else:
             self.__pointer -= 1
             self.__end_dec_parameters()
@@ -197,9 +208,9 @@ class Syntactic():
             if token['value'] == '{':
                 self.__method_body()
             else:
-                self.__error(found=token, expected='{')
+                self.__syntactical_error(found=token, expected='{')
         else:
-            self.__error(found=token, expected=')')
+            self.__syntactical_error(found=token, expected=')')
     
     def  __method_body(self) -> None:
         self.__variables_block()
@@ -215,11 +226,11 @@ class Syntactic():
             if token['value'] == ';':
                 token = self.__next(expected='}')
                 if not token['value'] == '}':
-                    self.__error(found=token, expected='}')
+                    self.__syntactical_error(found=token, expected='}')
             else:
-                self.__error(found=token, expected=';')
+                self.__syntactical_error(found=token, expected=';')
         else:
-            self.__error(found=token, expected='return')
+            self.__syntactical_error(found=token, expected='return')
     
     def __return(self) -> None:
         token = self.__next(expected='')
@@ -245,14 +256,14 @@ class Syntactic():
             self.__object_access_or_assigment()
             token = self.__next(expected=';')
             if not token['value'] == ';':
-                self.__error(found=token, expected=';')
+                self.__syntactical_error(found=token, expected=';')
         elif token['value'] == 'if':
             self.__if()
         elif token['value'] == 'for':
             self.__for_block()
         else:
             self.__pointer += 1
-            self.__error(found=token, expected="['print', 'read', 'if', 'for', IDE]")
+            self.__syntactical_error(found=token, expected="['print', 'read', 'if', 'for', IDE]")
 
     def __for_block(self) -> None:
         self.__begin_for()
@@ -271,13 +282,13 @@ class Syntactic():
                     self.__conditional_expression()
                     token = self.__next(expected=';')
                     if not token['value'] == ';':
-                        self.__error(found=token, expected=';')
+                        self.__syntactical_error(found=token, expected=';')
                 else:
-                    self.__error(found=token, expected=';')
+                    self.__syntactical_error(found=token, expected=';')
             else:
-                self.__error(found=token, expected='(')
+                self.__syntactical_error(found=token, expected='(')
         else:
-            self.__error(found=token, expected='for')
+            self.__syntactical_error(found=token, expected='for')
     
     def __conditional_expression(self) -> None:
         token = self.__next(expected="[NRO, IDE, CAC, '(']")
@@ -287,7 +298,7 @@ class Syntactic():
             self.__pointer -= 1 
             self.__relational_expression()
         else:
-            self.__error(found=token, expected="[NRO, IDE, CAC, '(']")
+            self.__syntactical_error(found=token, expected="[NRO, IDE, CAC, '(']")
 
     def __relational_expression(self) -> None:
         self.__relational_expression_value()
@@ -295,7 +306,7 @@ class Syntactic():
         if token['key'] == 'REL':
             self.__relational_expression_value()
         else:
-            self.__error(found=token, expected='REL')
+            self.__syntactical_error(found=token, expected='REL')
 
     def __for_increment(self) -> None:
         self.__dec_object_atribute_access()
@@ -306,7 +317,7 @@ class Syntactic():
         if token['value'] == '=':
             self.__value()
         elif token['value'] not in ['++', '--']:
-            self.__error(found=token, expected="[ART_DOUBLE, '=']")
+            self.__syntactical_error(found=token, expected="[ART_DOUBLE, '=']")
     
     def __end_for(self) -> None:
         token = self.__next(expected=')')
@@ -316,11 +327,11 @@ class Syntactic():
                 self.__commands()
                 token = self.__next(expected='}')
                 if not token['value'] == '}':
-                    self.__error(found=token, expected='}')
+                    self.__syntactical_error(found=token, expected='}')
             else:
-                self.__error(found=token, expected='{')
+                self.__syntactical_error(found=token, expected='{')
         else:
-            self.__error(found=token, expected=')')
+            self.__syntactical_error(found=token, expected=')')
 
     def __print_begin(self) -> None:
         token = self.__next(expected='print')
@@ -329,9 +340,9 @@ class Syntactic():
             if token['value'] == '(':
                 self.__print_end()
             else:
-                self.__error(found=token, expected='(')
+                self.__syntactical_error(found=token, expected='(')
         else:
-            self.__error(found=token, expected='print')
+            self.__syntactical_error(found=token, expected='print')
     
     def __print_end(self) -> None:
         self.__print_parameter()
@@ -339,9 +350,9 @@ class Syntactic():
         if token['value'] == ')':
             token = self.__next(expected=';')
             if not token['value'] == ';':
-                self.__error(found=token, expected=';')
+                self.__syntactical_error(found=token, expected=';')
         else:
-            self.__error(found=token, expected=')')
+            self.__syntactical_error(found=token, expected=')')
     
     def __print_parameter(self) -> None:
         token = self.__next(expected='[CAC, NRO, IDE]')
@@ -350,7 +361,7 @@ class Syntactic():
                 self.__pointer -= 1
                 self.__dec_object_atribute_access()
             else:
-                self.__error(found=token, expected='[CAC, NRO, IDE]')
+                self.__syntactical_error(found=token, expected='[CAC, NRO, IDE]')
     
     def __read_begin(self) -> None:
         token = self.__next(expected='read')
@@ -359,9 +370,9 @@ class Syntactic():
             if token['value'] == '(':
                 self.__read_end()
             else:
-                self.__error(found=token, expected='(')
+                self.__syntactical_error(found=token, expected='(')
         else:
-            self.__error(found=token, expected='read')
+            self.__syntactical_error(found=token, expected='read')
     
     def __read_end(self) -> None:
         self.__dec_object_atribute_access()
@@ -369,9 +380,9 @@ class Syntactic():
         if token['value'] == ')':
             token = self.__next(expected=';')
             if not token['value'] == ';':
-                self.__error(found=token, expected=';')
+                self.__syntactical_error(found=token, expected=';')
         else:
-            self.__error(found=token, expected=')')
+            self.__syntactical_error(found=token, expected=')')
     
     def __object_access_or_assigment(self) -> None:
         self.__dec_object_atribute_access()
@@ -404,7 +415,7 @@ class Syntactic():
             self.__pointer -= 1
             self.__arithimetic_or_logical_expression_with_parentheses()
         elif not (token['value'] in ['true', 'false'] or token['key'] == 'CAC'):
-            self.__error(found=token, expected="[NRO, CAC, '!', '[', '(', IDE, 'true', 'false']")
+            self.__syntactical_error(found=token, expected="[NRO, CAC, '!', '[', '(', IDE, 'true', 'false']")
 
     def __arithimetic_or_logical_expression_with_parentheses(self) -> None:
         self.__parentheses_begin()
@@ -415,14 +426,14 @@ class Syntactic():
             self.__expression()
             self.__parentheses_end()
         else:
-            self.__error(found=token, expected='(')
+            self.__syntactical_error(found=token, expected='(')
 
     def __parentheses_end(self) -> None:
         token = self.__next(expected=')')
         if token['value'] == ')':
             self.__expressions_without_parentheses_end()
         else:
-            self.__error(found=token, expected=')')
+            self.__syntactical_error(found=token, expected=')')
     
     def __expressions_without_parentheses_end(self) -> None:
         token = self.__next(expected="[ART, LOG]")
@@ -461,7 +472,7 @@ class Syntactic():
         elif token['value'] in ['+', '-', '*', '/']:
             self.__end_expression()
         else:
-            self.__error(found=token, expected="[ART, '->', REL, LOG]")
+            self.__syntactical_error(found=token, expected="[ART, '->', REL, LOG]")
 
     def __logical_expression_without_parentheses(self) -> None:
         token = self.__next(expected="['true', 'false', '!']")
@@ -476,7 +487,7 @@ class Syntactic():
         if token['key'] == 'NRO':
             self.__end_expression()
         else:
-            self.__error(found=token, expected='NRO')
+            self.__syntactical_error(found=token, expected='NRO')
 
     def __init_expression(self) -> None:
         self.__dec_object_atribute_access()
@@ -498,9 +509,9 @@ class Syntactic():
             self.__elements_assign()
             token = self.__next(expected=']')
             if not token['value'] == ']':
-                self.__error(found=token, expected=']')
+                self.__syntactical_error(found=token, expected=']')
         else:
-            self.__error(found=token, expected='[')
+            self.__syntactical_error(found=token, expected='[')
     
     def __elements_assign(self) -> None:
         self.__element_assign()
@@ -512,7 +523,7 @@ class Syntactic():
             self.__pointer -= 1
             self.__n_dimensions_assign()
         elif token['key'] not in ['CAC', 'IDE', 'NRO']:
-            self.__error(found=token, expected="[IDE, CAC, NRO, '[']")
+            self.__syntactical_error(found=token, expected="[IDE, CAC, NRO, '[']")
     
     def __n_dimensions_assign(self) -> None:
         token = self.__next(expected='[')
@@ -520,7 +531,7 @@ class Syntactic():
             self.__elements_assign()
             token = self.__next(expected=']')
             if not token['value'] == ']':
-                self.__error(found=token, expected=']')
+                self.__syntactical_error(found=token, expected=']')
         else:
             self.__pointer -= 1
 
@@ -538,14 +549,14 @@ class Syntactic():
             self.__logical_expression()
             token = self.__next(expected=')')
             if not token['value'] == ')':
-                self.__error(found=token, expected=')')
+                self.__syntactical_error(found=token, expected=')')
         elif token['value'] == '!':
             self.__logical_expression_begin()
         elif token['value'] in ['true', 'false', 'this'] or token['key'] == 'IDE':
             self.__pointer -= 1
             self.__logical_expression_value()
         else:
-            self.__error(found=token, expected="['(', '!', 'true', 'false', IDE]")
+            self.__syntactical_error(found=token, expected="['(', '!', 'true', 'false', IDE]")
 
     def __logical_expression(self) -> None:
         self.__logical_expression_begin()
@@ -559,7 +570,7 @@ class Syntactic():
                 self.__object_method_or_object_access()
                 self.__log_rel_optional()
             else:
-                self.__error(found=token, expected="['true', 'false', IDE]")
+                self.__syntactical_error(found=token, expected="['true', 'false', IDE]")
 
     def __object_method_or_object_access(self) -> None:
         self.__object_method_or_object_access_or_part()
@@ -577,7 +588,7 @@ class Syntactic():
             self.__pointer -= 1
             self.__object_method_or_object_access()
         elif token['key'] not in ['NRO', 'CAC']:
-            self.__error(found=token, expected="[NRO, CAC, IDE]")
+            self.__syntactical_error(found=token, expected="[NRO, CAC, IDE]")
 
     def __logical_expression_end(self) -> None:
         token = self.__next(expected="LOG")
@@ -604,7 +615,7 @@ class Syntactic():
         if token['value'] in ['+', '-', '*', '/']:
             self.__part_loop()
         else:
-            self.__error(found=token, expected='ART')
+            self.__syntactical_error(found=token, expected='ART')
     
     def __part_loop(self) -> None:
         token = self.__next(expected="[IDE, NRO, '(']")
@@ -615,7 +626,7 @@ class Syntactic():
         elif token['value'] == '(':
             self.__parentheses_expression()
         else:
-            self.__error(found=token, expected="[IDE, NRO, '(']")
+            self.__syntactical_error(found=token, expected="[IDE, NRO, '(']")
     
     def __parentheses_expression(self) -> None:
         token = self.__next(expected='(')
@@ -625,9 +636,9 @@ class Syntactic():
             if token['value'] == ')':
                 self.__end_expression_optional()
             else:
-                self.__error(found=token, expected=')')
+                self.__syntactical_error(found=token, expected=')')
         else:
-            self.__error(found=token, expected='(')
+            self.__syntactical_error(found=token, expected='(')
     
     def __simple_expression(self) -> None:
         token = self.__next(expected="[NRO, IDE, '(']")
@@ -638,7 +649,7 @@ class Syntactic():
         elif token['value'] == '(':
             self.__parentheses_expression()
         else:
-            self.__error(found=token, expected="[NRO, IDE, '(']")
+            self.__syntactical_error(found=token, expected="[NRO, IDE, '(']")
 
     def __part(self) -> None:
         token = self.__next(expected="[IDE, NRO]")
@@ -671,11 +682,11 @@ class Syntactic():
                 self.__parameters()
                 token = self.__next(expected=')')
                 if not token['value'] == ')':
-                    self.__error(found=token, expected=')')
+                    self.__syntactical_error(found=token, expected=')')
             else:
-                self.__error(found=token, expected='(')
+                self.__syntactical_error(found=token, expected='(')
         else:
-            self.__error(found=token, expected='->')
+            self.__syntactical_error(found=token, expected='->')
     
     def __parameters(self) -> None:
         token = self.__next(expected="[NRO, '!', '[', IDE, '(', 'true', 'false', CAC]")
@@ -695,7 +706,7 @@ class Syntactic():
     def __ide_or_constructor(self) -> None:
         token = self.__next(expected="[IDE, 'constructor']")
         if not (token['value'] == 'constructor' or token['key'] == 'IDE'):
-            self.__error(found=token, expected="[IDE, 'constructor']")
+            self.__syntactical_error(found=token, expected="[IDE, 'constructor']")
 
     def __dec_object_atribute_access(self) -> None:
         token = self.__next(expected='IDE')
@@ -703,7 +714,7 @@ class Syntactic():
             self.__dimensions()
             self.__end_object_attribute_access()
         else:
-            self.__error(found=token, expected='IDE')
+            self.__syntactical_error(found=token, expected='IDE')
     
     def __end_object_attribute_access(self) -> None:
         token = self.__next(expected='.')
@@ -723,9 +734,9 @@ class Syntactic():
             if token['value'] == '{':
                 self.__objects()
             else:
-                self.__error(found=token, expected='{')
+                self.__syntactical_error(found=token, expected='{')
         else:
-            self.__error(found=token, expected='objects')
+            self.__syntactical_error(found=token, expected='objects')
     
     def __objects(self) -> None:
         token = self.__next(expected="[IDE, '}']")
@@ -734,7 +745,7 @@ class Syntactic():
             self.__object()
             self.__objects()
         elif not token['value'] == '}':
-            self.__error(found=token, expected="[IDE, '}']")
+            self.__syntactical_error(found=token, expected="[IDE, '}']")
 
     def __object(self) -> None:
         token = self.__next(expected='IDE')
@@ -742,7 +753,7 @@ class Syntactic():
             self.__dec_var()
             self.__multiple_objects()
         else:
-            self.__error(found=token, expected='IDE')
+            self.__syntactical_error(found=token, expected='IDE')
     
     def __multiple_objects(self) -> None:
         token = self.__next(expected="[',', ';']")
@@ -750,23 +761,23 @@ class Syntactic():
             self.__dec_var()
             self.__multiple_objects()
         elif not token['value'] == ';':
-            self.__error(found=token, expected="[',', ';']")
+            self.__syntactical_error(found=token, expected="[',', ';']")
     
 
     def __variable_param(self) -> None:
         self.__type()
         token = self.__next(expected='IDE')
         if not token['key'] == 'IDE':
-            self.__error(found=token, expected='IDE')
+            self.__syntactical_error(found=token, expected='IDE')
 
     def __object_param(self) -> None:
         token = self.__next(expected='IDE')
         if token['key'] == 'IDE':
             token = self.__next(expected='IDE')
             if not token['key'] == 'IDE':
-                self.__error(found=token, expected='IDE')
+                self.__syntactical_error(found=token, expected='IDE')
         else:
-            self.__error(found=token, expected='IDE')
+            self.__syntactical_error(found=token, expected='IDE')
 
     def __constructor(self) -> None:
         token = self.__next(expected='constructor')
@@ -784,11 +795,11 @@ class Syntactic():
                     if token['value'] == '}':
                         self.__end_class()
                     else:
-                        self.__error(token, '}')
+                        self.__syntactical_error(token, '}')
                 else:
-                    self.__error(token, ')')
+                    self.__syntactical_error(token, ')')
             else:
-                self.__error(token, '(')
+                self.__syntactical_error(token, '(')
     
     def __dec_parameters_constructor(self)-> None:
         token = self.__next(expected="['int', 'real', 'boolean', 'string', IDE]")
@@ -805,7 +816,7 @@ class Syntactic():
         elif token['key'] == 'IDE':
             self.__object_param()
         else:
-            self.__error(found=token, expected="['int', 'real', 'boolean', 'string', IDE]")
+            self.__syntactical_error(found=token, expected="['int', 'real', 'boolean', 'string', IDE]")
         
     def __mult_dec_parameters_constructor(self)-> None:
         token = self.__next(expected=",")
@@ -820,7 +831,7 @@ class Syntactic():
         if token['value'] == '}':
             self.__class_block()
         else:
-            self.__error(token, '}')
+            self.__syntactical_error(token, '}')
 
     def __main(self) -> None:
         token = self.__next(expected='main')
@@ -829,9 +840,9 @@ class Syntactic():
             if token['value'] == '{':
                 self.__init_main()
             else:
-                self.__error(token, '{')
+                self.__syntactical_error(token, '{')
         else:
-            self.__error(token, 'main')
+            self.__syntactical_error(token, 'main')
 
     def __init_main(self) -> None:
         self.__body_blocks()
@@ -848,9 +859,9 @@ class Syntactic():
             if token['value'] == '{':
                 self.__main_methods_body()
             else:
-                self.__error(token,'{')
+                self.__syntactical_error(token,'{')
         else:
-            self.__error(token, 'methods')
+            self.__syntactical_error(token, 'methods')
     
     def __main_methods_body(self) -> None:
         self.__main_type()
@@ -865,13 +876,13 @@ class Syntactic():
                         self.__method_body()
                         self.__methods()
                     else:
-                        self.__error(token, '{')
+                        self.__syntactical_error(token, '{')
                 else:
-                    self.__error(token, ')')
+                    self.__syntactical_error(token, ')')
             else:
-                self.__error(token, '(')
+                self.__syntactical_error(token, '(')
         else:
-            self.__error(token, 'main')
+            self.__syntactical_error(token, 'main')
     
     def __main_type(self) -> None:
         token = self.__next(expected='PRE')
@@ -898,17 +909,17 @@ class Syntactic():
                             if token['value'] == '}':
                                 self.__if_else()
                             else:
-                                self.__error(token, '}')
+                                self.__syntactical_error(token, '}')
                         else:
-                            self.__error(token, '{')
+                            self.__syntactical_error(token, '{')
                     else:
-                        self.__error(token, 'then')
+                        self.__syntactical_error(token, 'then')
                 else:
-                    self.__error(token, ')')
+                    self.__syntactical_error(token, ')')
             else:
-                self.__error(token, '(')
+                self.__syntactical_error(token, '(')
         else:
-            self.__error(token, 'if')
+            self.__syntactical_error(token, 'if')
     
     def __if_else(self) -> None:
         if self.__pointer < self.__tokens_len:
@@ -921,9 +932,9 @@ class Syntactic():
                     if token['value'] == '}':
                         return
                     else:
-                        self.__error(token, '}')
+                        self.__syntactical_error(token, '}')
                 else:
-                    self.__error(token, '{')
+                    self.__syntactical_error(token, '{')
             else:
                 self.__pointer -= 1
     
@@ -937,9 +948,9 @@ class Syntactic():
             if token['value'] == '{':
                 self.__consts()
             else:
-                self.__error(token, '{')
+                self.__syntactical_error(token, '{')
         else:
-            self.__error(token, 'const')
+            self.__syntactical_error(token, 'const')
     
     def __consts(self) -> None:
         token = self.__next(expected='}')
@@ -947,6 +958,8 @@ class Syntactic():
             self.__pointer -= 1
             self.__const()
             self.__consts()
+        else:
+            self.__var_temp = {}
     
     def __const(self) -> None:
         self.__type()
@@ -956,13 +969,15 @@ class Syntactic():
     def __const_atribution(self) -> None:
         token = self.__next(expected='IDE')
         if token['key'] == 'IDE':
+            self.__var_temp['ide'] = token['value']
+            self.__add_ide(ide=token['value'], type=self.__var_temp['type'], category='const', parameter=False, extends=False, line=token['line'])
             token = self.__next(expected='=')
             if token['value'] == '=':
                 self.__atribution()
             else:
-                self.__error(token, '=')
+                self.__syntactical_error(token, '=')
         else:
-            self.__error(token, 'IDE')
+            self.__syntactical_error(token, 'IDE')
     
     def __multiple_consts(self) -> None:
         token = self.__next(expected="[',', ';']")
@@ -970,7 +985,7 @@ class Syntactic():
             self.__const_atribution()
             self.__multiple_consts()
         elif not token['value'] == ';':
-            self.__error(token, "[',', ';']")
+            self.__syntactical_error(token, "[',', ';']")
     
     def __atribution(self) -> None:
         token = self.__next(expected="[NRO, BOOL, CAC]")
@@ -982,13 +997,17 @@ class Syntactic():
             token['key'] == 'NRO'
                 or
             token['key'] == 'CAC'):
-            self.__error(token, "[NRO, BOOL, CAC]")
-    
+            self.__syntactical_error(token, "[NRO, BOOL, CAC]")
+        else:
+            self.__verify_attribution(self.__var_temp, token)
     """
         Função que faz o papel de guardar o erro assim que ele acontece
     """
-    def __error(self, found: dict, expected: str) -> None:
-        self.__errors.append(f"L - {found['line'] if 'line' in found.keys() else 'EOF'}:\t Esperava {expected}, mas encontrou [{found['key']}:{found['value']}].")
+    def __syntactical_error(self, found: dict, expected: str) -> None:
+        self.__syntactical_errors.append(f"L - {found['line'] if 'line' in found.keys() else 'EOF'}:\t Esperava {expected}, mas encontrou [{found['key']}:{found['value']}].")
+
+    def __semantic_error(self, line: int, type: str, ide: str) -> None:
+        self.__semantic_errors.append(f"L - {line}: [IDE: {ide}] {type}")
 
     """
         Função que avança o ponteiro da lista para o próximo token
@@ -996,7 +1015,7 @@ class Syntactic():
     """
     def __next(self, expected: str = 'TOKEN') -> dict:
         if self.__pointer > self.__tokens_len:
-            self.__error(found={'key':'EOF', 'value': 'End Of File'}, expected=expected)
+            self.__syntactical_error(found={'key':'EOF', 'value': 'End Of File'}, expected=expected)
             raise Exception("End of file founded.")
         token = self.__tokens[self.__pointer]
         self.__pointer += 1
@@ -1021,3 +1040,29 @@ class Syntactic():
             n_line = int(aux[0].strip())
             self.__tokens.append({'key': splitline[0].strip(), 'value': splitline[1].strip(), "line": n_line})
             self.__tokens_len += 1
+
+    def __add_ide(self, ide: str, type: str, category: str, parameter: bool, extends: bool, line: int, update: bool = False) -> None:
+        table = self.__scope_table
+        if self.__scopes:
+            for scope in self.__scopes:
+                table = table[scope]['scope']
+        if ide in table.keys():
+            if not update:
+                self.__semantic_error(line, type="duplicado", ide=ide)
+                return
+        table[ide] = {"type": type , "category": category, "parameter": parameter, "extends": extends, "scope": {}}
+
+    def __verify_attribution(self, expected: str, token: str) -> None:
+        if expected['type'] == 'string':
+            if token['key'] == 'CAC':
+                return
+        elif expected['type'] == 'boolean':
+            if token['value'] == 'false' or token['value'] == 'true':
+                return
+        elif expected['type'] == 'int':
+            if token['key'] == 'NRO' and '.' not in token['value']:
+                return
+        elif expected['type'] == 'real':
+            if token['key'] == 'NRO' and '.' in token['value']:
+                return
+        self.__semantic_error(token['line'], type=f"Tipo incompatível, esperava '{expected['type']}', recebeu '{token['value']}'", ide=expected['ide'])

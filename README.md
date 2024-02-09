@@ -50,4 +50,6 @@ Os testes se encontram na pasta `tests/` e podem ser executados com o comando `p
 
 Para o analisador sintático, os testes foram simples e voltados apenas a escrita de código.
 
+Os arquivos de teste para o analisador sintático estão na pasta `files-syntactical`
+
 **OBS:** o comando `python` depende de como está instalado em sua máquina. A depender, pode ser `python3`
