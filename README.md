@@ -1,6 +1,6 @@
-# Lexical Analyzer and Syntactical Analyzer
+# Lexical Analyzer, Syntactical Analyzer and Semantical Analyzer
 
-O presente projeto se refere a um **analisador léxico e sintático**. O analisador léxico é capaz de definir os tokens e os possíveis erros de uma liguagem previamente já definida, já o analisador sintático, é capaz de verificar a lista de tokens que foi gerada a partir do léxico e capturar, se existir, qualquer tipo de erro sintático de acordo com a gramática já definida e baseada também nos tokens da linguagem. A linguagem conta com as seguintes regras léxicas:
+O presente projeto se refere a um **analisador léxico, sintático e semântico**. O analisador léxico é capaz de definir os tokens e os possíveis erros de uma liguagem previamente já definida, já o analisador sintático, é capaz de verificar a lista de tokens que foi gerada a partir do léxico e capturar, se existir, qualquer tipo de erro sintático de acordo com a gramática já definida e baseada também nos tokens da linguagem. Por fim, o analisador semântico analisa a semântica da escrita de acordo com as regras definidas da linguagem, afim de verificar se está escrita corretamente. A linguagem conta com as seguintes regras léxicas:
 
 | Tokens                           | Formato                 |
 |:--------------------------------:|:-----------------------:|
@@ -27,12 +27,14 @@ A versão do python utilizada está listada no arquivo ```.python-version```
 
 ## Execução
 
-Para executar o **analisador léxico** basta executar o comando `python run.py -l` na raíz do projeto ( dentro da pasta `lexical-analyzer`). É necessário fornecer os arquivos `.txt` contendo os textos que serão analisados na pasta `files/`.
+Para executar o **analisador léxico** basta executar o comando `python run.py -l` na raíz do projeto ( dentro da pasta `lexical-analyzer`). É necessário fornecer os arquivos `.txt` contendo os textos que serão analisados na pasta `files/` passando a flag `--name` e logo após o nome do arquivo.
 
-Para executar o **analisador sintático** basta executar o comando `python run.py -sy` na raíz do projeto ( dentro da pasta `lexical-analyzer`). É necessário fornecer os arquivos `.txt` contendo os textos que serão analisados na pasta `files/`.
+Para executar o **analisador sintático** basta executar o comando `python run.py -sy` na raíz do projeto ( dentro da pasta `lexical-analyzer`). É necessário fornecer os arquivos `.txt` contendo os textos que serão analisados na pasta `files/` passando a flag `--name` e logo após o nome do arquivo.
 Todo o processo é feito no arquivo `run.py`, integrando todos os módulos.
 
-Para executar ambos os analisadores, basta fornecer as duas flags *flags* ou simplesmente omití-las.
+O analisador semântico está acoplado no analisador sintático, caso, então, queira executar este analisador basta executar o analisador sintático.
+
+Para executar todos os analisadores, basta fornecer as duas flags *flags* ou simplesmente omití-las. isso irá executar os analisadores em todos os arquivos presentes na pasta `files/` com exceção daqueles que estão nomedados como `[nome do arquivo]-[analisador]-saida.txt`
 
 Vale ressaltar que ao fim da execução, os arquivos gerados terão os nomes originais concatenados com `[analisador usado]-saida.txt`. Todavia, sintático substitui, caso o arquivo apresente, o nome `lexico-saida.txt` por `sintatico-saida.txt`.
 
@@ -50,6 +52,6 @@ Os testes se encontram na pasta `tests/` e podem ser executados com o comando `p
 
 Para o analisador sintático, os testes foram simples e voltados apenas a escrita de código.
 
-Os arquivos de teste para o analisador sintático estão na pasta `files-syntactical`
+Os arquivos de teste para o analisador sintático e semântico estão na pasta `files-test`
 
 **OBS:** o comando `python` depende de como está instalado em sua máquina. A depender, pode ser `python3`

@@ -1,0 +1,82 @@
+const {
+    real sete = 4.1;
+    string oito = "asd";
+}
+variables {
+    int a;
+    int b[2];
+}
+
+class c1 {
+    variables{real v1;int v2;}
+    objects{c1 obj2;}
+    methods{
+        int m1(int v5, int v6, c1 c){
+            variables {
+                int v3;
+            }
+            objects {
+                c1 obj1;
+            }
+            obj1.obj2.v1 = obj1.v1 + obj1.v1;
+            return v6;
+        } 
+    }
+    constructor (int v, real j, c1 c) {
+        variables{}
+        objects{}
+    }
+}
+
+class c2 extends c1{
+    variables{int a;real b;}
+    objects{c1 c;}
+    methods{
+        int m1(){
+            variables {
+                int v5; int v6;
+            }
+            objects {
+            }
+            obj2->constructor(a,b,c);
+            a = 1 + obj2->m1(v5,v6,c);
+            return 1;
+        }
+        int m2(){
+            variables {
+                int v5; int v6;
+            }
+            objects {
+            }
+            print(this);
+            c.obj2.v2++;
+            obj2->constructor(a,b,c);
+            a = 1 + obj2->m1(v5,v6,c);
+            return 1;
+        }
+    } 
+    constructor () {
+        variables{}
+        objects{}
+    }
+}
+
+class main {
+    variables {
+        int v2;
+        int v4[3];
+    }
+    objects {
+        c1 obj1;
+    }
+    methods{ 
+        int main(){
+            variables {
+                int v4;
+            }
+            objects {
+            }
+            return 1;
+        } 
+    }
+}
